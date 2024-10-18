@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Results{% endblock %}
+
+{% block content %}
+<div id="results-section" class="section">
+    <div class="container">
+        <h1 class="text-dark">Analysis Results</h1>
+
+        <!-- Result Overview Section -->
+        <div class="row">
+            <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Result Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-dark">Here is an overview of the results based on the selected features.</p>
+                        
+                        <!-- Example for displaying summary results -->
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-light text-dark mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Feature A Accuracy</h5>
+                                        <p class="card-text">Accuracy: 92.5%</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light text-dark mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Feature B Precision</h5>
+                                        <p class="card-text">Precision: 89.2%</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light text-dark mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Feature C Recall</h5>
+                                        <p class="card-text">Recall: 87.4%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Table Section -->
+        <div class="row">
+            <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+                <div class="card shadow mb-4">
+                    <div class="card-header py-3">
+                        <h6 class="m-0 font-weight-bold text-primary">Detailed Results</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-dark">Detailed results for the selected features are displayed below:</p>
+                        
+                        <!-- Results Table -->
+                        <div class="table-responsive">
+                            <table class="table" id="results-table">
+                                <thead>
+                                    <tr>
+                                        <th>Feature</th>
+                                        <th>Value</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Example rows for displaying results -->
+                                    <tr>
+                                        <td>Feature A</td>
+                                        <td>92.5%</td>
+                                        <td class="text-success">Pass</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Feature B</td>
+                                        <td>89.2%</td>
+                                        <td class="text-warning">Warning</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Feature C</td>
+                                        <td>87.4%</td>
+                                        <td class="text-danger">Fail</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Export Buttons -->
+                        <div class="mt-3">
+                            <button class="btn btn-primary" id="download-csv">Download CSV</button>
+                            <button class="btn btn-success" id="generate-report">Generate Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+    // Button functionality for exporting results
+    document.getElementById('download-csv').addEventListener('click', function () {
+        alert('Downloading CSV... (Implement server-side download functionality)');
+    });
+
+    document.getElementById('generate-report').addEventListener('click', function () {
+        alert('Generating report... (Implement report generation logic)');
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sb-admin-2.min.css') }}">
+
+{% block content %}
+<div id="train-section" class="container-fluid mt-4">
+
+    <!-- Data Preview Section -->
+    <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Dataset Preview</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-dark">Here's a sample of your uploaded data:</p>
+                    <!-- Data Preview Table -->
+                    <div class="table-responsive">
+                        <table class="table" id="preview-table">
+                            <thead>
+                                <tr>
+                                    <th>TPIN</th>
+                                    <th>Location</th>
+                                    <th>TAX Type</th>
+                                    <th>Transaction ID</th>
+                                    <th>Period From</th>
+                                    <th>Period To</th>
+                                    <th>Payment Method</th>
+                                    <th>Payment Amount</th>
+                                    <th>Payment Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Loop through the first 5 rows passed from the Python route -->
+                                {% if preview_data %}
+                                    {% for row in preview_data %}
+                                        <tr>
+                                            <td>{{ row[0] }}</td>
+                                            <td>{{ row[1] }}</td>
+                                            <td>{{ row[2] }}</td>
+                                            <td>{{ row[3] }}</td>
+                                            <td>{{ row[4] }}</td>
+                                            <td>{{ row[5] }}</td>
+                                            <td>{{ row[6] }}</td>
+                                            <td>{{ row[7] }}</td>
+                                            <td>{{ row[8] }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="9" class="text-center">No data available.</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Hidden input to store the filename -->
+                    <input type="hidden" name="filename" value="{{ filename }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Training Configuration Section -->
+    <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Training Configuration</h6>
+                </div>
+                <div class="card-body">
+                    <form id="training-form">
+                        <div class="form-group">
+                            <label for="model-type">Model Type:</label>
+                            <select name="model-type" id="model-type" class="form-control">
+                                <option value="">Select Model Type</option>
+                                <option value="decision_tree">Decision Tree</option>
+                                <option value="random_forest">Random Forest</option>
+                                <option value="svm">SVM</option>
+                            </select>
+                        </div>
+                        <button type="button" id="start-training" class="btn btn-primary mt-3" enabled>Start Training</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Training Status Section -->
+<div id="training-status" class="mt-3"> 
+    <div class="card shadow-sm">
+        <div class="card-body p-2">
+            <p id="training-message" class="text-dark mb-2"></p>
+            <div class="progress" style="height: 5px;">
+                <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block upload_js %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+<script>
+
+    // Enable or disable the "Start Training" button based on model type selection
+    document.getElementById("model-type").addEventListener("change", function() {
+        var button = document.getElementById("start-training");
+        if (this.value) {
+            button.disabled = false; // Enable the button when a model is selected
+        } else {
+            button.disabled = true; // Disable the button when no model is selected
+        }
+    });
+
+    // Handle the "Start Training" button click
+    document.getElementById("start-training").addEventListener("click", function() {
+        // Get the selected model type
+        var modelType = document.getElementById("model-type").value;
+        if (!modelType) {
+            alert("Please select a model type first.");
+            return;
+        }
+
+        // Display a message and start the training process
+        document.getElementById("training-message").textContent = "Training in progress...";
+        document.querySelector(".progress-bar").style.width = "0%";
+
+        // Simulate training progress (replace with actual AJAX call to server)
+        let progress = 0;
+        let interval = setInterval(function() {
+            progress += 10;
+            document.querySelector(".progress-bar").style.width = progress + "%";
+
+            if (progress >= 100) {
+                clearInterval(interval);
+                document.getElementById("training-message").textContent = "Training Complete!";
+            }
+        }, 500); // Simulate progress every 0.5 seconds
+    });
+</script>
+{% endblock %}

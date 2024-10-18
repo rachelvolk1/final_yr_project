@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-dark">Edit User</h1>
+
+    <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Edit User Details</h6>
+                </div>
+                <div class="card-body">
+                    <form id="edit-user-form" method="POST" action="{{ url_for('edit_user', user_id=user.user_id) }}">
+                        <div class="form-group">
+                            <label for="first-name">First Name:</label>
+                            <input type="text" id="first-name" name="first_name" class="form-control" placeholder="Enter First Name" value="{{ user.first_name }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="last-name">Last Name:</label>
+                            <input type="text" id="last-name" name="last_name" class="form-control" placeholder="Enter Last Name" value="{{ user.last_name }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dob">Date of Birth:</label>
+                            <input type="date" id="dob" name="dob" class="form-control" value="{{ user.dob }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="nrc">NRC:</label>
+                            <input type="text" id="nrc" name="nrc" class="form-control" placeholder="Enter NRC" value="{{ user.nrc }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="position">Position:</label>
+                            <input type="text" id="position" name="position" class="form-control" placeholder="Enter Position" value="{{ user.position }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" class="form-control" placeholder="Enter Email" value="{{ user.email }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" id="password" name="password" class="form-control" placeholder="Enter New Password (Leave blank to keep current password)">
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Message -->
+    {% if message %}
+        <div class="alert alert-{{ message_type }}" role="alert">
+            {{ message }}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

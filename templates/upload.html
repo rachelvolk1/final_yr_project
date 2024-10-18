@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Upload{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/upload.css') }}">
+{% endblock %}
+
+{% block content %}
+  <div class="main-content">
+    <div id="upload-section" class="section">
+      <div class="wrapper">
+        <div class="container">
+          <h1>Upload Dataset</h1>
+          <div class="upload-container">
+            <div class="border-container">
+              <div class="icons fa-4x">
+                <i class="fas fa-file-image" data-fa-transform="shrink-3 down-2 left-6 rotate--45"></i>
+                <i class="fas fa-file-alt" data-fa-transform="shrink-2 up-4"></i>
+                <i class="fas fa-file-pdf" data-fa-transform="shrink-3 down-2 right-6 rotate-45"></i>
+              </div>
+              <form id="uploadForm" action="/upload" method="post">  <p>Upload your dataset here</p>
+                <input type="file" id="file-upload" name="fileUpload" required>
+                <p id="error-message" style="color: red;"></p>
+                <div id="data-preview"></div>
+                <button type="submit">Upload</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block upload_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('#uploadForm').on('submit', function(e) {
+    e.preventDefault(); // Prevent the default form submission
+    var formData = new FormData(this); // Get the form data
+
+    $.ajax({
+      url: "/upload", // Use the direct URL
+      method: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: function(response) {
+        if (response.dataset_id) {
+          // Redirect to the preview page with the dataset ID
+          window.location.href = '/preview?dataset_id=' + response.dataset_id;
+        } else {
+          $('#error-message').text('Upload failed. Please try again.'); // Handle failure
+        }
+      },
+      error: function(error) {
+        console.error("Upload failed:", error);
+        $('#error-message').text('An error occurred during upload.'); // Display error message
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

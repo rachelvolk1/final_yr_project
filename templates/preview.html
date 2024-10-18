@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}Preview{% endblock %}
+
+{% block content %}
+<!-- CSS Links -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/preview.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sb-admin-2.min.css') }}">
+
+<div class="container-fluid">
+    <!-- Page Heading -->
+    <h1 class="h3 mb-2 text-gray-800">Preview</h1>
+    
+    <!-- Search -->
+    <div class="mb-3">
+        <input type="text" id="search-bar" class="form-control" placeholder="Search...">
+    </div>
+
+    <!-- Filter by Payment Date -->
+    <div class="mb-3">
+        <label for="filter-date">Filter by Payment Date:</label>
+        <input type="date" id="filter-date" class="form-control">
+    </div>
+
+    <!-- Apply Filter Button -->
+    <div class="mb-3">
+        <button id="apply-filter" class="btn btn-primary">Apply Filter</button>
+        <div id="status-message" class="status-message"></div>
+    </div>
+
+    <!-- DataTable -->
+    <div class="card shadow mb-4 mt-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Dataset Preview</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table" id="preview-table">
+                    <thead>
+                        <tr>
+                            <th>TPIN</th>
+                            <th>Location</th>
+                            <th>TAX Type</th>
+                            <th>Transaction ID</th>
+                            <th>Period From</th>
+                            <th>Period To</th>
+                            <th>Payment Method</th>
+                            <th>Payment Amount</th>
+                            <th>Payment Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Data will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-controls mb-3">
+        <button id="prev-page" class="btn btn-secondary">Previous</button>
+        <span id="page-number">1</span>
+        <button id="next-page" class="btn btn-secondary">Next</button>
+    </div>
+
+    <!-- Load Dataset Button -->
+    <div class="mb-3">
+        <button id="load-dataset" class="btn btn-primary">Load Dataset</button>
+        <div id="status-message" class="status-message"></div>
+    </div>
+
+</div>
+
+<!-- /.container-fluid -->
+
+<!-- JS Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        let currentPage = 1;
+        let pageSize = 10;
+        let dataset = [];
+
+        // Extract dataset ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const datasetId = urlParams.get('dataset_id');
+
+        // Automatically load dataset when the page is accessed
+        if (datasetId) {
+            $.getJSON("/api/preview/" + datasetId, function(data) {
+                dataset = data;
+                console.log('Dataset loaded:', dataset);
+                renderTable();
+            }).fail(function(xhr, status, error) {
+                $('#status-message').text('Failed to load dataset');
+                console.error('Error:', status, error);
+            });
+        }
+
+        function renderTable() {
+            const filteredData = filterData();
+            const start = (currentPage - 1) * pageSize;
+            const pageData = filteredData.slice(start, start + pageSize);
+            const tableBody = $('#table-body');
+
+            tableBody.empty(); // Clear the table body
+
+            // Check if there's data to display
+            if (pageData.length === 0) {
+                tableBody.append(`<tr><td colspan="9">No data available</td></tr>`);
+            } else {
+                pageData.forEach(function(row) {
+                    tableBody.append(`
+                        <tr>
+                            <td>${row['TPIN']}</td>
+                            <td>${row['Location']}</td>
+                            <td>${row['TAX Type']}</td>
+                            <td>${row['Transaction ID']}</td>
+                            <td>${row['Period From']}</td>
+                            <td>${row['Period To']}</td>
+                            <td>${row['Payment Method']}</td>
+                            <td>${row['Payment Amount']}</td>
+                            <td>${row['Payment Date']}</td>
+                        </tr>
+                    `);
+                });
+            }
+
+            updatePagination(filteredData.length);
+        }
+
+        // Filter the data based on search bar and date filter
+        function filterData() {
+            const searchQuery = $('#search-bar').val().toLowerCase();
+            const filterDate = $('#filter-date').val();
+
+            return dataset.filter(function(row) {
+                const searchMatch = Object.values(row).some(function(value) {
+                    return value.toLowerCase().includes(searchQuery);
+                });
+
+                const dateMatch = filterDate ? row['Payment Date'] === filterDate : true;
+
+                return searchMatch && dateMatch;
+            });
+        }
+
+        // Update pagination controls
+        function updatePagination(totalRecords) {
+            const totalPages = Math.ceil(totalRecords / pageSize);
+            $('#page-number').text(currentPage);
+
+            $('#prev-page').prop('disabled', currentPage === 1);
+            $('#next-page').prop('disabled', currentPage === totalPages);
+        }
+
+        // Handle "Previous" button click
+        $('#prev-page').on('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        });
+
+        // Handle "Next" button click
+        $('#next-page').on('click', function() {
+            const totalPages = Math.ceil(dataset.length / pageSize);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+            }
+        });
+
+        // Trigger search and date filter when "Enter" key is pressed
+        $('#search-bar, #filter-date').on('keydown', function(event) {
+            if (event.key === 'Enter') {
+                currentPage = 1;  // Reset to first page when filters are applied
+                renderTable();    // Re-render the table based on updated filters
+            }
+        });
+
+        // Apply filter button functionality
+        $('#apply-filter').on('click', function() {
+            currentPage = 1;  // Reset to first page when filters are applied
+            renderTable();    // Re-render the table based on updated filters
+        });
+    });
+</script>
+{% endblock %}

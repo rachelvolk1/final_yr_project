@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Alerts Center{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-primary">Alerts Center</h2>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">All Notifications</h6>
+        </div>
+        <div class="card-body">
+            <!-- Notification List -->
+            <ul class="list-group">
+                
+                <!-- Dataset Upload Notification -->
+                <li class="list-group-item d-flex align-items-center">
+                    <div class="mr-3">
+                        <div class="icon-circle bg-info">
+                            <i class="fas fa-upload text-white"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="small text-gray-500">{{ upload_time }}</div>
+                        <span class="font-weight-bold">{{ dataset_name }} has been uploaded successfully!</span>
+                    </div>
+                    <a class="stretched-link" href="/preview?dataset={{ dataset_instance_id }}"></a>
+                </li>
+
+                <!-- Model Training Notification -->
+                <li class="list-group-item d-flex align-items-center">
+                    <div class="mr-3">
+                        <div class="icon-circle bg-primary">
+                            <i class="fas fa-cogs text-white"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="small text-gray-500">{{ training_time }}</div>
+                        <span class="font-weight-bold">{{ dataset_name }} has been trained on the model!</span>
+                    </div>
+                    <a class="stretched-link" href="/train?dataset={{ dataset_instance_id }}"></a>
+                </li>
+
+                <!-- Data Testing Notification -->
+                <li class="list-group-item d-flex align-items-center">
+                    <div class="mr-3">
+                        <div class="icon-circle bg-success">
+                            <i class="fas fa-check text-white"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="small text-gray-500">{{ test_time }}</div>
+                        <span class="font-weight-bold">{{ dataset_name }} has been successfully tested!</span>
+                    </div>
+                    <a class="stretched-link" href="/test?dataset={{ dataset_instance_id }}"></a>
+                </li>
+
+                <!-- Results Notification -->
+                <li class="list-group-item d-flex align-items-center">
+                    <div class="mr-3">
+                        <div class="icon-circle bg-warning">
+                            <i class="fas fa-chart-bar text-white"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="small text-gray-500">{{ results_time }}</div>
+                        <span class="font-weight-bold">Results for {{ dataset_name }} are now available!</span>
+                    </div>
+                    <a class="stretched-link" href="/results?dataset={{ dataset_instance_id }}"></a>
+                </li>
+
+                <!-- Analysis Notification -->
+                <li class="list-group-item d-flex align-items-center">
+                    <div class="mr-3">
+                        <div class="icon-circle bg-danger">
+                            <i class="fas fa-chart-line text-white"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="small text-gray-500">{{ analysis_time }}</div>
+                        <span class="font-weight-bold">Analysis for {{ dataset_name }} is complete!</span>
+                    </div>
+                    <a class="stretched-link" href="/analyze?dataset={{ dataset_instance_id }}"></a>
+                </li>
+
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block upload_js %}
+<script>
+    // Function to dismiss a notification
+    function dismissNotification(element) {
+        element.parentElement.style.animation = 'fadeOut 0.5s ease';
+        setTimeout(function() {
+            element.parentElement.remove();
+        }, 500);
+    }
+
+    // Optional: Automatically hide notifications after a few seconds
+    window.onload = function() {
+        const notifications = document.querySelectorAll('.notification');
+        notifications.forEach(function(notification) {
+            setTimeout(function() {
+                dismissNotification(notification.querySelector('.close'));
+            }, 5000); // Automatically dismiss after 5 seconds
+        });
+    };
+</script>
+{% endblock %}

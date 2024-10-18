@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Test{% endblock %}
+
+{% block content %}
+<div id="test-section" class="section">
+    <div class="container">
+        <h1 class="text-dark">Data Selection and Testing</h1>
+        
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#dataSelection">Data Selection</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#individualSelection">Individual Data Selection</a>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            
+            <!-- Data Selection Tab -->
+            <div class="tab-pane fade show active" id="dataSelection">
+                <!-- Data Preview Section -->
+                <div class="row">
+                    <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Dataset Preview</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-dark">Here's a sample of your uploaded data:</p>
+                                <!-- Data Preview Table -->
+                                <div class="table-responsive">
+                                    <table class="table" id="preview-table">
+                                        <thead>
+                                            <tr>
+                                                <th>TPIN</th>
+                                                <th>Location</th>
+                                                <th>TAX Type</th>
+                                                <th>Transaction ID</th>
+                                                <th>Period From</th>
+                                                <th>Period To</th>
+                                                <th>Payment Method</th>
+                                                <th>Payment Amount</th>
+                                                <th>Payment Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="table-body">
+                                            {% if preview_data %}
+                                                {% for row in preview_data %}
+                                                    <tr>
+                                                        <td>{{ row[0] }}</td>
+                                                        <td>{{ row[1] }}</td>
+                                                        <td>{{ row[2] }}</td>
+                                                        <td>{{ row[3] }}</td>
+                                                        <td>{{ row[4] }}</td>
+                                                        <td>{{ row[5] }}</td>
+                                                        <td>{{ row[6] }}</td>
+                                                        <td>{{ row[7] }}</td>
+                                                        <td>{{ row[8] }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                            {% else %}
+                                                <tr>
+                                                    <td colspan="9" class="text-center">No data available.</td>
+                                                </tr>
+                                            {% endif %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <!-- Hidden input to store the filename -->
+                                <input type="hidden" name="filename" value="{{ filename }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Selection Section -->
+                <div class="row">
+                    <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Feature Selection (Max 5)</h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="feature-selection-form">
+                                    <!-- Generate checkboxes for the features in the table headers -->
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="TPIN" id="feature_tpin">
+                                        <label class="form-check-label" for="feature_tpin">TPIN</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="Location" id="feature_location">
+                                        <label class="form-check-label" for="feature_location">Location</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="TAX Type" id="feature_tax_type">
+                                        <label class="form-check-label" for="feature_tax_type">TAX Type</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="Transaction ID" id="feature_transaction_id">
+                                        <label class="form-check-label" for="feature_transaction_id">Transaction ID</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="Period From" id="feature_period_from">
+                                        <label class="form-check-label" for="feature_period_from">Period From</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="Period To" id="feature_period_to">
+                                        <label class="form-check-label" for="feature_period_to">Period To</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="Payment Method" id="feature_payment_method">
+                                        <label class="form-check-label" for="feature_payment_method">Payment Method</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="Payment Amount" id="feature_payment_amount">
+                                        <label class="form-check-label" for="feature_payment_amount">Payment Amount</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="Payment Date" id="feature_payment_date">
+                                        <label class="form-check-label" for="feature_payment_date">Payment Date</label>
+                                    </div>
+
+                                    <p class="text-muted">Select up to 5 features for the analysis.</p>
+
+                                    <!-- Apply Filters Button -->
+                                    <button type="button" class="btn btn-primary" id="apply-filters">Apply Filters</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Individual Data Selection Tab -->
+            <div class="tab-pane fade" id="individualSelection">
+                <fieldset>
+                    <legend>Individual Data Entry</legend>
+                    <form id="individualDataForm">
+                        <div class="form-group">
+                            <label for="individualFeature_1">Feature 1:</label>
+                            <input type="text" class="form-control" id="individualFeature_1" name="individualFeature_1">
+                        </div>
+                        <div class="form-group">
+                            <label for="individualFeature_2">Feature 2:</label>
+                            <input type="text" class="form-control" id="individualFeature_2" name="individualFeature_2">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit Data</button>
+                    </form>
+                </fieldset>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block upload_js %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // Apply Filters button functionality
+  const applyFiltersBtn = document.getElementById('apply-filters');
+  applyFiltersBtn.addEventListener('click', function() {
+      const selectedFeatures = [];
+      const checkboxes = document.querySelectorAll('.form-check-input:checked');
+      checkboxes.forEach(checkbox => {
+          selectedFeatures.push(checkbox.value);
+      });
+      alert('Selected Features: ' + selectedFeatures.join(', '));
+  });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var tabTriggerList = [].slice.call(document.querySelectorAll('.nav-link'))
+        tabTriggerList.forEach(function (tabEl) {
+            tabEl.addEventListener('click', function (event) {
+                event.preventDefault();
+                var tab = new bootstrap.Tab(tabEl);
+                tab.show();
+            });
+        });
+    });
+  
+</script>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Create User{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="text-dark">Create User</h1>
+
+    <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Create a New User</h6>
+                </div>
+                <div class="card-body">
+                    <form id="create-user-form" method="POST" action="{{ url_for('create_user') }}">
+                        <div class="form-group">
+                            <label for="first-name">First Name:</label>
+                            <input type="text" id="first-name" name="first_name" class="form-control" placeholder="Enter First Name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="last-name">Last Name:</label>
+                            <input type="text" id="last-name" name="last_name" class="form-control" placeholder="Enter Last Name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" class="form-control" placeholder="Enter Email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dob">Date of Birth:</label>
+                            <input type="date" id="dob" name="date_of_birth" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="nrc">NRC:</label>
+                            <input type="text" id="nrc" name="nrc" class="form-control" placeholder="Enter NRC" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="position">Position:</label>
+                            <input type="text" id="position" name="position" class="form-control" placeholder="Enter Position" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" id="password" name="password" class="form-control" placeholder="Enter Password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary mt-3">Create User</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Message -->
+    {% if message %}
+        <div class="alert alert-{{ message_type }}" role="alert">
+            {{ message }}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('create-user-form').addEventListener('submit', function(event) {
+        // Example validation
+        const firstName = document.getElementById('first-name').value;
+        const lastName = document.getElementById('last-name').value;
+        const email = document.getElementById('email').value;
+        const dob = document.getElementById('dob').value;
+        const nrc = document.getElementById('nrc').value;
+        const position = document.getElementById('position').value;
+        const password = document.getElementById('password').value;
+
+        if (!firstName || !lastName || !email || !dob || !nrc || !position || !password) {
+            event.preventDefault();
+            alert('All fields are required.');
+        }
+    });
+</script>
+{% endblock %}
