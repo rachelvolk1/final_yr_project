@@ -1,33 +1,41 @@
-window.onload = function() {
-    const section = document.querySelector('.section');
-    section.style.display = 'block';
-};
 $(document).ready(function() {
-    // Handle form submission for file upload
-    $('#uploadForm').on('submit', function(event) {
-        event.preventDefault(); // Prevent default form submission
+  // Ensure the .section element is displayed as block on page load
+  $('.section').css('display', 'block');
 
-        var formData = new FormData(this); // Create FormData object from form
+  $('#uploadForm').on('submit', function(e) {
+    e.preventDefault(); // Prevent the default form submission
+    var formData = new FormData(this); // Get the form data
 
-        $.ajax({
-            url: $(this).attr('action'), // URL for the file upload (Flask route)
-            type: 'POST',
-            data: formData,
-            contentType: false,
-            processData: false,
-            success: function(response) {
-                // Check if the response contains a filename
-                if (response.filename) {
-                    // Redirect to the preview page with the uploaded filename
-                    window.location.href = '/preview/' + response.filename;
-                } else {
-                    $('#error-message').text('Unexpected response received.');
-                }
-            },
-            error: function(err) {
-                console.error('Error uploading file:', err);
-                $('#error-message').text('Error uploading file. Please try again.');
-            }
-        });
+    uploadFile(formData);
+  });
+
+  function uploadFile(formData) {
+    $.ajax({
+      url: "/upload", // Use the direct URL
+      method: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      success: handleUploadSuccess,
+      error: handleUploadError
     });
+  }
+
+  function handleUploadSuccess(response) {
+    if (response.dataset_id) {
+      $('#success-message').text('Upload successful. Please proceed to preview.');
+      
+      // Redirect to the preview page after a delay
+      setTimeout(function() {
+        window.location.href = '/preview?dataset_id=' + response.dataset_id;
+      }, 2000); // Adjust delay as needed
+    } else {
+      $('#error-message').text('Upload failed. Please try again.');
+    }
+  }
+
+  function handleUploadError(error) {
+    console.error("Upload failed:", error);
+    $('#error-message').text('An error occurred during upload.');
+  }
 });
