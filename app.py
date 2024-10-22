@@ -1,22 +1,28 @@
-import pymysql
-pymysql.install_as_MySQLdb()  # Use PyMySQL as MySQLdb
-
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, jsonify, session
-from werkzeug.security import generate_password_hash, check_password_hash
-from models.decision_tree import train_decision_tree_model
-from models.random_forest import train_random_forest_model
-from models.svm import train_svm_model
-from config import Config
-from models.models import db  # Import the db instance from models.py
-from models.models import User, Dataset, Instance, ErrorLog, Model, Notification, Preprocessing, Process, TestResult, TrainingProcess
-from flask_migrate import Migrate
-from sqlalchemy.sql import func
-from sqlalchemy.exc import IntegrityError
+# Standard library imports
 import os
-import pandas as pd
 import time
 from datetime import datetime
 
+# Third-party imports
+import pymysql
+import pandas as pd
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, jsonify, session
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+from sqlalchemy.sql import func
+from sqlalchemy.exc import IntegrityError
+
+# Local application imports
+from config import Config
+from models.models import db, User, Dataset, Instance, ErrorLog, Model, Notification, Preprocessing, Process, TestResult, TrainingProcess
+from models.decision_tree import train_decision_tree_model
+from models.random_forest import train_random_forest_model
+from models.svm import train_svm_model
+
+# Configure PyMySQL to be used as MySQLdb
+pymysql.install_as_MySQLdb()
 
 # Initialize the app
 app = Flask(__name__)
@@ -103,6 +109,26 @@ EXPECTED_COLUMNS = [
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def save_file(file):
+    filename = secure_filename(f"{int(time.time())}_{file.filename}")
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(filepath)
+    return filename, filepath
+
+def create_instance(filename):
+    instance = Instance(user_id=session['user_id'], dataset_id=1, instance_name=filename)
+    db.session.add(instance)
+    db.session.commit()
+    return instance.instance_id
+
+def load_dataframe(filepath):
+    if filepath.endswith('.csv'):
+        return pd.read_csv(filepath)
+    elif filepath.endswith('.xlsx'):
+        return pd.read_excel(filepath)
+    else:
+        raise ValueError('Unsupported file type.')
 
 def handle_missing_values(df, method):
     if method == 'remove':
@@ -236,61 +262,36 @@ def forgot_password():
         return redirect(url_for('login'))
     return render_template('forgot_password.html') 
     
-# Route to handle file upload
-@app.route('/upload', methods=['GET', 'POST'])
-def upload_file():
-    if request.method == 'POST':
-        # Check if the file part is in the request
-        if 'fileUpload' not in request.files:
-            flash('No file part in the request')
-            return redirect(request.url)
-
-        file = request.files['fileUpload']
-        # If no file is selected
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-
-        # If a valid file is uploaded
-        if file and allowed_file(file.filename):
-            filename = f"{int(time.time())}_{file.filename}"
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-            try:
-                # Save the uploaded file to the server
-                file.save(filepath)
-
-                # Create an instance record (adjust this based on your logic)
-                instance = Instance(user_id=session['user_id'], dataset_id=1, instance_name=filename)  # Example dataset_id
-                db.session.add(instance)
-                db.session.commit()
-
-                # Get the instance_id
-                instance_id = instance.instance_id
-
-                # Load the DataFrame based on file type (optional)
-                if filename.endswith('.csv'):
-                    df = pd.read_csv(filepath)
-                elif filename.endswith('.xlsx'):
-                    df = pd.read_excel(filepath)
-                else:
-                    flash('Unsupported file type')
-                    return redirect(request.url)
-
-                # Redirect to the preview page with the instance_id and filename
-                return redirect(url_for('preview_file', instance_id=instance_id, filename=filename))
-
-            except Exception as e:
-                flash(f'Error processing file: {str(e)}')
-                return redirect(request.url)
-
-        else:
-            flash('Unsupported file type')
-            return redirect(request.url)
-
-    # If GET request, render the file upload form
+# Display upload page
+@app.route('/upload', methods=['GET'])
+def upload_form():
+    # Render the file upload form
     return render_template('upload.html')
 
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    # if 'user_id' not in session:
+    #     return jsonify({'error': 'User not logged in'}), 401
+
+    if 'fileUpload' not in request.files:
+        return jsonify({'error': 'No file part in the request.'}), 400
+
+    file = request.files['fileUpload']
+
+    if not file or not file.filename:
+        return jsonify({'error': 'No file selected.'}), 400
+
+    if not allowed_file(file.filename):
+        return jsonify({'error': 'Unsupported file type.'}), 400
+
+    try:
+        filename, filepath = save_file(file)
+        instance_id = create_instance(filename)
+        load_dataframe(filepath)  # Load DataFrame to validate file contents
+        return jsonify({'dataset_id': instance_id, 'filename': filename}), 200
+    except Exception as e:
+        db.session.rollback()  # Rollback the transaction if an error occurs
+        return jsonify({'error': f'Error processing file: {str(e)}'}), 500
 
 # Route to display the preview page
 @app.route('/preview/<int:instance_id>/<filename>', methods=['GET'])
