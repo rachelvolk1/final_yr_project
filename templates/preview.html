@@ -10,7 +10,7 @@
 <div class="container-fluid">
     <!-- Page Heading -->
     <h1 class="h3 mb-2 text-gray-800">Preview</h1>
-    
+
     <!-- Search -->
     <div class="mb-3">
         <input type="text" id="search-bar" class="form-control" placeholder="Search...">
@@ -34,20 +34,16 @@
             <h6 class="m-0 font-weight-bold text-primary">Dataset Preview</h6>
         </div>
         <div class="card-body">
+            <!-- Loading Spinner -->
+            <div id="loading-spinner" style="display: none;" class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+
+            <!-- Table -->
             <div class="table-responsive">
                 <table class="table" id="preview-table">
-                    <thead>
-                        <tr>
-                            <th>TPIN</th>
-                            <th>Location</th>
-                            <th>TAX Type</th>
-                            <th>Transaction ID</th>
-                            <th>Period From</th>
-                            <th>Period To</th>
-                            <th>Payment Method</th>
-                            <th>Payment Amount</th>
-                            <th>Payment Date</th>
-                        </tr>
+                    <thead id="table-header">
+                        <!-- Dynamic headers will be inserted here -->
                     </thead>
                     <tbody id="table-body">
                         <!-- Data will be dynamically inserted here -->
@@ -57,134 +53,67 @@
         </div>
     </div>
 
-    <!-- Pagination Controls -->
-    <div class="pagination-controls mb-3">
-        <button id="prev-page" class="btn btn-secondary">Previous</button>
-        <span id="page-number">1</span>
-        <button id="next-page" class="btn btn-secondary">Next</button>
+    <!-- Pagination -->
+    <div class="pagination-controls">
+        <button id="prev-page" class="btn btn-primary">Previous</button>
+        <span id="page-number">1</span> / <span id="total-pages">1</span>
+        <button id="next-page" class="btn btn-primary">Next</button>
     </div>
-
-    <!-- Load Dataset Button -->
-    <div class="mb-3">
-        <button id="load-dataset" class="btn btn-primary">Load Dataset</button>
-        <div id="status-message" class="status-message"></div>
-    </div>
-
 </div>
 
-<!-- /.container-fluid -->
-
-<!-- JS Scripts -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- JavaScript code goes here -->
 <script>
     $(document).ready(function() {
-        let currentPage = 1;
-        let pageSize = 10;
-        let dataset = [];
+        let datasetId = "{{ instance_id }}";
+        let fileName = "{{ filename }}";
 
-        // Extract dataset ID from URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const datasetId = urlParams.get('dataset_id');
+        console.log("Dataset ID:", datasetId);
+        console.log("File Name:", fileName);
 
-        // Automatically load dataset when the page is accessed
-        if (datasetId) {
-            $.getJSON("/api/preview/" + datasetId, function(data) {
-                dataset = data;
-                console.log('Dataset loaded:', dataset);
-                renderTable();
-            }).fail(function(xhr, status, error) {
-                $('#status-message').text('Failed to load dataset');
-                console.error('Error:', status, error);
-            });
-        }
+        $.ajax({
+            url: `/api/preview/${datasetId}/${fileName}`,  // Ensure this matches your Flask route
+            method: 'GET',
+            beforeSend: function() {
+                $('#loading-spinner').show();  // Show spinner when loading starts
+            },
+            success: function(response) {
+                displayPreviewData(response);
+                $('#loading-spinner').hide();  // Hide spinner when loading is done
+            },
+            error: function(xhr, status, error) {
+                $('#status-message').text('An error occurred while fetching the preview.');
+                $('#loading-spinner').hide();  // Hide spinner on error
+            }
+        });
 
-        function renderTable() {
-            const filteredData = filterData();
-            const start = (currentPage - 1) * pageSize;
-            const pageData = filteredData.slice(start, start + pageSize);
+        function displayPreviewData(data) {
             const tableBody = $('#table-body');
+            const tableHeader = $('#table-header');
 
-            tableBody.empty(); // Clear the table body
+            tableBody.empty();
+            tableHeader.empty();
 
-            // Check if there's data to display
-            if (pageData.length === 0) {
-                tableBody.append(`<tr><td colspan="9">No data available</td></tr>`);
+            if (data.error) {
+                $('#status-message').text(data.error);
+            } else if (data.length > 0) {
+                const headers = Object.keys(data[0]);
+                const headerRow = $('<tr></tr>');
+                headers.forEach(function(header) {
+                    headerRow.append(`<th>${header}</th>`);
+                });
+                tableHeader.append(headerRow);
+
+                data.forEach(function(row) {
+                    const rowData = $('<tr></tr>');
+                    Object.values(row).forEach(function(value) {
+                        rowData.append(`<td>${value}</td>`);
+                    });
+                    tableBody.append(rowData);
+                });
             } else {
-                pageData.forEach(function(row) {
-                    tableBody.append(`
-                        <tr>
-                            <td>${row['TPIN']}</td>
-                            <td>${row['Location']}</td>
-                            <td>${row['TAX Type']}</td>
-                            <td>${row['Transaction ID']}</td>
-                            <td>${row['Period From']}</td>
-                            <td>${row['Period To']}</td>
-                            <td>${row['Payment Method']}</td>
-                            <td>${row['Payment Amount']}</td>
-                            <td>${row['Payment Date']}</td>
-                        </tr>
-                    `);
-                });
+                tableBody.append('<tr><td colspan="9">No data available</td></tr>');
             }
-
-            updatePagination(filteredData.length);
         }
-
-        // Filter the data based on search bar and date filter
-        function filterData() {
-            const searchQuery = $('#search-bar').val().toLowerCase();
-            const filterDate = $('#filter-date').val();
-
-            return dataset.filter(function(row) {
-                const searchMatch = Object.values(row).some(function(value) {
-                    return value.toLowerCase().includes(searchQuery);
-                });
-
-                const dateMatch = filterDate ? row['Payment Date'] === filterDate : true;
-
-                return searchMatch && dateMatch;
-            });
-        }
-
-        // Update pagination controls
-        function updatePagination(totalRecords) {
-            const totalPages = Math.ceil(totalRecords / pageSize);
-            $('#page-number').text(currentPage);
-
-            $('#prev-page').prop('disabled', currentPage === 1);
-            $('#next-page').prop('disabled', currentPage === totalPages);
-        }
-
-        // Handle "Previous" button click
-        $('#prev-page').on('click', function() {
-            if (currentPage > 1) {
-                currentPage--;
-                renderTable();
-            }
-        });
-
-        // Handle "Next" button click
-        $('#next-page').on('click', function() {
-            const totalPages = Math.ceil(dataset.length / pageSize);
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderTable();
-            }
-        });
-
-        // Trigger search and date filter when "Enter" key is pressed
-        $('#search-bar, #filter-date').on('keydown', function(event) {
-            if (event.key === 'Enter') {
-                currentPage = 1;  // Reset to first page when filters are applied
-                renderTable();    // Re-render the table based on updated filters
-            }
-        });
-
-        // Apply filter button functionality
-        $('#apply-filter').on('click', function() {
-            currentPage = 1;  // Reset to first page when filters are applied
-            renderTable();    // Re-render the table based on updated filters
-        });
     });
 </script>
 {% endblock %}

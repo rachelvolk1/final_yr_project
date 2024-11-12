@@ -96,3 +96,62 @@ $('#next-page').on('click', function() {
 // Search and filter
 $('#search-bar').on('input', filterData);
 $('#filter-date').on('change', filterData);
+
+
+// static/js/preview.js
+$(document).ready(function() {
+    let datasetId = "{{ instance_id }}";
+    let fileName = "{{ filename }}";
+
+    console.log("Dataset ID:", datasetId);
+    console.log("File Name:", fileName);
+
+    $.ajax({
+        url: `/api/preview/${datasetId}/${fileName}`,  // Ensure this matches your Flask route
+        method: 'GET',
+        beforeSend: function() {
+            $('#loading-spinner').show();  // Show spinner when loading starts
+        },
+        success: function(response) {
+            displayPreviewData(response);
+            $('#loading-spinner').hide();  // Hide spinner when loading is done
+        },
+        error: function(xhr, status, error) {
+            console.error("Preview fetch failed:", error);
+            $('#status-message').text('An error occurred while fetching the preview.');
+            $('#loading-spinner').hide();  // Hide spinner on error
+        }
+    });
+
+    function displayPreviewData(data) {
+        const tableBody = $('#table-body');
+        const tableHeader = $('#table-header');
+
+        tableBody.empty();
+        tableHeader.empty();
+
+        if (data.error) {
+            $('#status-message').text(data.error);
+        } else if (data.length > 0) {
+            const headers = Object.keys(data[0]);
+            const headerRow = $('<tr></tr>');
+            headers.forEach(function(header) {
+                headerRow.append(`<th>${header}</th>`);
+            });
+            tableHeader.append(headerRow);
+
+            data.forEach(function(row) {
+                const rowData = $('<tr></tr>');
+                Object.values(row).forEach(function(value) {
+                    rowData.append(`<td>${value}</td>`);
+                });
+                tableBody.append(rowData);
+            });
+        } else {
+            tableBody.append('<tr><td colspan="9">No data available</td></tr>');
+        }
+    }
+
+    // Function to handle pagination
+    // Pagination buttons logic can be added here
+});

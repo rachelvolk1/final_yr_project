@@ -12,7 +12,7 @@ from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from sqlalchemy.sql import func
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 # Local application imports
 from config import Config
@@ -33,6 +33,7 @@ app.config.from_object(Config)
 # Set up database configurations (optional if already in config.py)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://dbmasteruser:mypassword@ls-07e0ef4f1e34959472eab621b30ef9cad6b83a49.c3ueawe2gzde.ap-south-1.rds.amazonaws.com/dbmaster'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = r'C:\Users\USER\Desktop\proj\uploads'
 
 # Initialize db and Flask-Migrate
 db.init_app(app)
@@ -107,40 +108,51 @@ EXPECTED_COLUMNS = [
     "Payment Amount", "Payment Date"
 ]
 
+# Function to check allowed file types
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'txt', 'csv', 'xlsx'}
 
+
+# Function to save the uploaded file
 def save_file(file):
-    filename = secure_filename(f"{int(time.time())}_{file.filename}")
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.makedirs(app.config['UPLOAD_FOLDER'])
+    filename = secure_filename(file.filename)
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
     return filename, filepath
 
-def create_instance(filename):
-    instance = Instance(user_id=session['user_id'], dataset_id=1, instance_name=filename)
+
+# Function to create a dataset entry
+def create_dataset(filename, filepath):
+    dataset = Dataset(
+        dataset_name=filename,
+        file_path=filepath,
+        upload_date=datetime.utcnow(),
+        dataset_status='uploaded'
+    )
+    db.session.add(dataset)
+    db.session.commit()  # Commit here to get the dataset_id
+    return dataset.dataset_id  # Ensure it's dataset_id not id
+
+
+# Function to create an instance (Placeholder function assuming it uses dataset_id)
+def create_instance(dataset_id):
+    instance = Instance(
+        dataset_id=dataset_id,
+        instance_name=f'Instance for dataset {dataset_id}',  # Update name as needed
+        instance_status='created'
+    )
     db.session.add(instance)
     db.session.commit()
     return instance.instance_id
 
-def load_dataframe(filepath):
-    if filepath.endswith('.csv'):
-        return pd.read_csv(filepath)
-    elif filepath.endswith('.xlsx'):
-        return pd.read_excel(filepath)
-    else:
-        raise ValueError('Unsupported file type.')
 
-def handle_missing_values(df, method):
-    if method == 'remove':
-        return df.dropna()
-    elif method == 'mean':
-        return df.fillna(df.mean())
-    elif method == 'median':
-        return df.fillna(df.median())
-    elif method == 'mode':
-        return df.fillna(df.mode().iloc[0])
-    else:
-        return df
+
+# Function to load and validate dataframe (Placeholder function)
+def load_dataframe(filepath):
+    # Implementation for loading and validating the DataFrame
+    pass
 
 # Function to validate the DataFrame against expected columns
 def validate_columns(df):
@@ -180,7 +192,7 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        
+
         # Query the database to find the user by their email
         user = User.query.filter_by(email=email).first()
 
@@ -193,7 +205,7 @@ def login():
             return redirect(url_for('dashboard'))  # Redirect to the dashboard if login is successful
         else:
             flash('Invalid email or password!', 'danger')  # Show an error if login fails
-    
+
     return render_template('login.html')  # Render the login page for GET requests
 
 
@@ -260,24 +272,21 @@ def forgot_password():
         # Implement logic to handle forgot password functionality (e.g., sending a reset link via email)
         flash('An email has been sent with instructions to reset your password.', 'info')
         return redirect(url_for('login'))
-    return render_template('forgot_password.html') 
-    
+    return render_template('forgot_password.html')
+
 # Display upload page
-@app.route('/upload', methods=['GET'])
+@app.route('/upload', methods=['GET', 'POST'])
 def upload_form():
-    # Render the file upload form
-    return render_template('upload.html')
+    if request.method == 'GET':
+        return render_template('upload.html')
+    elif request.method == 'POST':
+        return upload_file()
 
-@app.route('/upload', methods=['POST'])
 def upload_file():
-    # if 'user_id' not in session:
-    #     return jsonify({'error': 'User not logged in'}), 401
-
     if 'fileUpload' not in request.files:
         return jsonify({'error': 'No file part in the request.'}), 400
 
     file = request.files['fileUpload']
-
     if not file or not file.filename:
         return jsonify({'error': 'No file selected.'}), 400
 
@@ -286,12 +295,19 @@ def upload_file():
 
     try:
         filename, filepath = save_file(file)
-        instance_id = create_instance(filename)
-        load_dataframe(filepath)  # Load DataFrame to validate file contents
-        return jsonify({'dataset_id': instance_id, 'filename': filename}), 200
+        dataset_id = create_dataset(filename, filepath)
+
+        # Create instance for dataset and load DataFrame for validation
+        instance_id = create_instance(dataset_id)
+        load_dataframe(filepath)
+
+        return jsonify({'dataset_id': dataset_id, 'instance_id': instance_id, 'filename': filename}), 200
+    except SQLAlchemyError as e:
+        db.session.rollback()  # Ensure rollback on database error
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
     except Exception as e:
-        db.session.rollback()  # Rollback the transaction if an error occurs
-        return jsonify({'error': f'Error processing file: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 500
+
 
 # Route to display the preview page
 @app.route('/preview/<int:instance_id>/<filename>', methods=['GET'])
@@ -299,8 +315,8 @@ def preview_file(instance_id, filename):
     return render_template('preview.html', instance_id=instance_id, filename=filename)
 
 # API endpoint to provide file data for AJAX
-@app.route('/api/preview/<int:instance_id>/<filename>', methods=['GET'])
-def api_preview_file(instance_id, filename):
+@app.route('/api/preview/<int:dataset_id>/<string:filename>', methods=['GET'])
+def api_preview(dataset_id, filename):
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
     if os.path.exists(filepath):
@@ -316,8 +332,7 @@ def api_preview_file(instance_id, filename):
             # Convert the DataFrame to JSON for DataTables or other use
             data_json = df.to_dict(orient='records')
 
-            return jsonify(data_json)
-
+            return jsonify(data_json), 200
         except Exception as e:
             return jsonify({"error": f"Error processing file: {str(e)}"}), 500
     else:
@@ -377,7 +392,7 @@ def test():
     if request.method == 'POST':
         feature_1 = request.form.get('individualFeature_1')
         feature_2 = request.form.get('individualFeature_2')
-        
+
         response = {
             'feature_1': feature_1,
             'feature_2': feature_2
