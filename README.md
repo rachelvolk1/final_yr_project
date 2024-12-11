@@ -11,6 +11,8 @@ This project aims to develop a machine learning-based fraud detection system usi
 
 ## Installation
 - create venv and install requirements.txt
+python -m venv venv
+venv\Scripts\activate
 
 pip install -r requirements.txt
 python app.py
