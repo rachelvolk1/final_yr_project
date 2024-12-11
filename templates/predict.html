@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Predict{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sb-admin-2.min.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+{% endblock %}
+
+{% block content %}
+<div id="predict-section" class="container-fluid mt-4">
+    <!-- Dataset Selection Section -->
+    <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Select Pre-processed Dataset</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="dataset-select">Pre-processed Dataset:</label>
+                        <select name="dataset-select" id="dataset-select" class="form-control">
+                            <option value="">Select a Dataset</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Preview Section -->
+    <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Dataset Preview</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-dark">Here's a sample of your pre-processed data:</p>
+                    <!-- Data Preview Table -->
+                    <div class="table-responsive">
+                        <table class="table" id="preview-table">
+                            <thead>
+                                <tr id="table-header"></tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <tr>
+                                    <td colspan="9" class="text-center">No data available.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Hidden input to store the filename -->
+                    <input type="hidden" name="filename" id="filename">
+                    <button type="button" class="btn btn-primary mt-3" onclick="makeBatchPrediction()">Submit Data for Batch Prediction</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Data Selection Section -->
+    <div class="row">
+        <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Individual Data Selection</h6>
+                </div>
+                <div class="card-body">
+                    <form id="individualDataForm">
+                        <div class="form-group mb-3">
+                            <label for="TPIN">TPIN:</label>
+                            <input type="text" class="form-control" id="TPIN" name="TPIN" onblur="loadDynamicFields()" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="LOCATION">Location:</label>
+                            <select class="form-control" id="LOCATION" name="LOCATION" required>
+                                <option value="">Select Location</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="TAX_TYPE">TAX Type:</label>
+                            <select class="form-control" id="TAX_TYPE" name="TAX_TYPE" required>
+                                <option value="">Select TAX Type</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Transaction_ID">Transaction ID:</label>
+                            <select class="form-control" id="Transaction_ID" name="Transaction_ID" required>
+                                <option value="">Select Transaction ID</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Period_From_year">Period From Year:</label>
+                            <input type="number" class="form-control" id="Period_From_year" name="Period_From_year" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Period_From_month">Period From Month:</label>
+                            <input type="number" class="form-control" id="Period_From_month" name="Period_From_month" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Period_From_day">Period From Day:</label>
+                            <input type="number" class="form-control" id="Period_From_day" name="Period_From_day" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Period_To_year">Period To Year:</label>
+                            <input type="number" class="form-control" id="Period_To_year" name="Period_To_year" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Period_To_month">Period To Month:</label>
+                            <input type="number" class="form-control" id="Period_To_month" name="Period_To_month" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Period_To_day">Period To Day:</label>
+                            <input type="number" class="form-control" id="Period_To_day" name="Period_To_day" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Payment_Method">Payment Method:</label>
+                            <select class="form-control" id="Payment_Method" name="Payment_Method" required>
+                                <option value="">Select Payment Method</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Payment_Amount">Payment Amount:</label>
+                            <input type="number" class="form-control" id="Payment_Amount" name="Payment_Amount" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Payment_Date_year">Payment Date Year:</label>
+                            <input type="number" class="form-control" id="Payment_Date_year" name="Payment_Date_year" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Payment_Date_month">Payment Date Month:</label>
+                            <input type="number" class="form-control" id="Payment_Date_month" name="Payment_Date_month" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="Payment_Date_day">Payment Date Day:</label>
+                            <input type="number" class="form-control" id="Payment_Date_day" name="Payment_Date_day" required>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="makeIndividualPrediction()">Submit Data for Individual Prediction</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+   <!-- Prediction Results Section -->
+<div class="row">
+    <div class="col-xl-12 col-lg-12 col-md-12 mb-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Prediction Results</h6>
+            </div>
+            <div class="card-body">
+                <!-- Area to display the prediction result -->
+                <div id="prediction-result" class="mt-4"></div>
+
+                <!-- Analyze Results Button -->
+                <button id="analyze-results-button" class="btn btn-secondary mt-3" style="display: none;" onclick="window.location.href='/analysis'">Analyze Results</button>
+                <p id="no-results-message" class="text-danger mt-3" style="display: none;">No results to analyze.</p>
+
+                <!-- Loader -->
+                <div id="loading-spinner" class="spinner-border text-primary" role="status" style="display: none;">
+                    <span class="visually-hidden"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div> <!-- Closing container-fluid -->
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+<script src="{{ url_for('static', filename='js/predict.js') }}"></script>
+{% endblock %}

@@ -97,3 +97,18 @@
   button[type="submit"]:hover {
     background-color: #0d0b30;
   }
+
+  /* upload.css */
+.btn-preview {
+  background-color: #4CAF50; /* Customize color */
+  color: white;
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-preview:hover {
+  background-color: #45a049; /* Hover effect */
+}
