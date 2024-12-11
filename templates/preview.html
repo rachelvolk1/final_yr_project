@@ -3,117 +3,234 @@
 {% block title %}Preview{% endblock %}
 
 {% block content %}
-<!-- CSS Links -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/preview.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/sb-admin-2.min.css') }}">
 
 <div class="container-fluid">
-    <!-- Page Heading -->
     <h1 class="h3 mb-2 text-gray-800">Preview</h1>
 
-    <!-- Search -->
     <div class="mb-3">
         <input type="text" id="search-bar" class="form-control" placeholder="Search...">
     </div>
 
-    <!-- Filter by Payment Date -->
     <div class="mb-3">
         <label for="filter-date">Filter by Payment Date:</label>
         <input type="date" id="filter-date" class="form-control">
     </div>
 
-    <!-- Apply Filter Button -->
     <div class="mb-3">
         <button id="apply-filter" class="btn btn-primary">Apply Filter</button>
         <div id="status-message" class="status-message"></div>
     </div>
 
-    <!-- DataTable -->
     <div class="card shadow mb-4 mt-4">
         <div class="card-header py-3">
             <h6 class="m-0 font-weight-bold text-primary">Dataset Preview</h6>
         </div>
         <div class="card-body">
-            <!-- Loading Spinner -->
             <div id="loading-spinner" style="display: none;" class="spinner-border text-primary" role="status">
                 <span class="sr-only">Loading...</span>
             </div>
-
-            <!-- Table -->
             <div class="table-responsive">
                 <table class="table" id="preview-table">
                     <thead id="table-header">
-                        <!-- Dynamic headers will be inserted here -->
                     </thead>
                     <tbody id="table-body">
-                        <!-- Data will be dynamically inserted here -->
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Pagination -->
     <div class="pagination-controls">
         <button id="prev-page" class="btn btn-primary">Previous</button>
         <span id="page-number">1</span> / <span id="total-pages">1</span>
         <button id="next-page" class="btn btn-primary">Next</button>
     </div>
+
+<!-- Dataset Cleaning Section -->
+<div class="card shadow mb-4 mt-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Dataset Cleaning</h6>
+    </div>
+    <div class="card-body">
+        <!-- Clean Data Button -->
+        <div class="clean-data-controls mb-3">
+            <button id="clean-data" class="btn btn-danger">Clean Data</button>
+        </div>
+
+        <!-- Save Cleaned Dataset Button -->
+        <!-- <button id="save-cleaned-dataset" class="btn btn-success mb-3">Save Cleaned Dataset</button>-->
+
+        <!-- Dataset ID and File Name -->
+        <div id="dataset-id" data-id="{{ instance_id }}"></div>
+        <div id="file-name" data-name="{{ filename }}"></div>
+    </div>
+</div>
+</div>
 </div>
 
-<!-- JavaScript code goes here -->
 <script>
-    $(document).ready(function() {
-        let datasetId = "{{ instance_id }}";
-        let fileName = "{{ filename }}";
+document.addEventListener("DOMContentLoaded", function() {
+    const datasetId = document.getElementById("dataset-id").dataset.id;
+    const fileName = document.getElementById("file-name").dataset.name;
 
-        console.log("Dataset ID:", datasetId);
-        console.log("File Name:", fileName);
+    const rowsPerPage = 10;
+    let currentPage = 1;
+    let originalData = [];
+    let filteredData = [];
+    let cleanedData = [];
 
-        $.ajax({
-            url: `/api/preview/${datasetId}/${fileName}`,  // Ensure this matches your Flask route
-            method: 'GET',
-            beforeSend: function() {
-                $('#loading-spinner').show();  // Show spinner when loading starts
-            },
-            success: function(response) {
-                displayPreviewData(response);
-                $('#loading-spinner').hide();  // Hide spinner when loading is done
-            },
-            error: function(xhr, status, error) {
-                $('#status-message').text('An error occurred while fetching the preview.');
-                $('#loading-spinner').hide();  // Hide spinner on error
-            }
+    // Function to fetch and display preview data
+    function displayPreviewData(data) {
+        originalData = data;
+        filteredData = originalData;
+        renderTable(currentPage, filteredData);
+    }
+
+    // Function to render the data table
+    function renderTable(page, data) {
+        const tableBody = $('#table-body');
+        const tableHeader = $('#table-header');
+
+        tableBody.empty();
+        tableHeader.empty();
+
+        if (data.length > 0) {
+            const headers = Object.keys(data[0]);
+            const headerRow = $('<tr></tr>');
+            headers.forEach(function(header) {
+                headerRow.append(`<th>${header}</th>`);
+            });
+            tableHeader.append(headerRow);
+
+            const start = (page - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const paginatedData = data.slice(start, end);
+
+            paginatedData.forEach(row => {
+                const rowElement = $('<tr></tr>');
+                headers.forEach(header => {
+                    rowElement.append(`<td>${row[header] !== null ? row[header] : ''}</td>`);
+                });
+                tableBody.append(rowElement);
+            });
+        } else {
+            tableBody.append('<tr><td colspan="9">No data available</td></tr>');
+        }
+
+        $('#page-number').text(currentPage);
+        $('#total-pages').text(Math.ceil(data.length / rowsPerPage));
+    }
+
+    // Function to filter data based on search term and date
+    function filterData() {
+        const searchTerm = $('#search-bar').val().toLowerCase();
+        const filterDate = $('#filter-date').val();
+
+        filteredData = originalData.filter(row => {
+            const matchesSearch = Object.values(row).some(
+                value => value && value.toString().toLowerCase().includes(searchTerm)
+            );
+            const matchesDate = !filterDate || row['Payment Date'] === filterDate;
+            return matchesSearch && matchesDate;
         });
 
-        function displayPreviewData(data) {
-            const tableBody = $('#table-body');
-            const tableHeader = $('#table-header');
+        currentPage = 1;
+        renderTable(currentPage, filteredData);
+    }
 
-            tableBody.empty();
-            tableHeader.empty();
-
-            if (data.error) {
-                $('#status-message').text(data.error);
-            } else if (data.length > 0) {
-                const headers = Object.keys(data[0]);
-                const headerRow = $('<tr></tr>');
-                headers.forEach(function(header) {
-                    headerRow.append(`<th>${header}</th>`);
-                });
-                tableHeader.append(headerRow);
-
-                data.forEach(function(row) {
-                    const rowData = $('<tr></tr>');
-                    Object.values(row).forEach(function(value) {
-                        rowData.append(`<td>${value}</td>`);
-                    });
-                    tableBody.append(rowData);
-                });
-            } else {
-                tableBody.append('<tr><td colspan="9">No data available</td></tr>');
-            }
+    // Event listeners for filtering and pagination
+    $('#search-bar').on('input', filterData);
+    $('#filter-date').on('change', filterData);
+    $('#prev-page').on('click', function() {
+        if (currentPage > 1) {
+            currentPage--;
+            renderTable(currentPage, filteredData);
         }
     });
+    $('#next-page').on('click', function() {
+        if (currentPage * rowsPerPage < filteredData.length) {
+            currentPage++;
+            renderTable(currentPage, filteredData);
+        }
+    });
+
+    // Function to clean data
+    $('#clean-data').on('click', function() {
+        $('#status-message').text('').removeClass('alert alert-success alert-danger');
+        $.ajax({
+            url: `/api/clean/${datasetId}/${fileName}`,
+            method: 'POST',
+            beforeSend: function() {
+                $('#loading-spinner').show();
+                $('#status-message').text('Data cleaning is in progress...').addClass('alert alert-info');
+            },
+            success: function(response) {
+                $('#loading-spinner').hide();
+                $('#status-message').text('Data cleaned successfully!').removeClass('alert-info').addClass('alert alert-success');
+
+                // Store cleaned dataset for saving later
+                cleanedData = response.cleaned_data;
+
+                // Show the save dataset button only after cleaning is successful
+                $('#save-cleaned-dataset').show();
+            },
+            error: function(xhr, status, error) {
+                $('#loading-spinner').hide();
+                $('#status-message').text('An error occurred while cleaning the data.').removeClass('alert-info').addClass('alert alert-danger');
+            }
+        });
+    });
+
+    // Function to save cleaned data
+    $('#save-cleaned-dataset').on('click', function() {
+        if (!Array.isArray(cleanedData) || cleanedData.length === 0) {
+            $('#status-message').text('No cleaned data available to save. Please clean the data first.').addClass('alert alert-warning');
+            return;
+        }
+
+        $('#status-message').text('').removeClass('alert alert-success alert-danger');
+        fetch('/api/save_cleaned_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                data: cleanedData
+            })
+        }).then(response => response.json())
+        .then(data => {
+            $('#loading-spinner').hide();
+            if (data.message === 'Dataset saved successfully') {
+                $('#status-message').text('Cleaned Dataset has been saved successfully. File path: ' + data.file_path).removeClass('alert-info').addClass('alert alert-success');
+            } else {
+                $('#status-message').text('An error occurred while saving the cleaned dataset: ' + data.error).removeClass('alert-info').addClass('alert alert-danger');
+            }
+        }).catch(error => {
+            $('#loading-spinner').hide();
+            $('#status-message').text('An error occurred while saving the cleaned dataset: ' + error.message).removeClass('alert-info').addClass('alert alert-danger');
+        });
+    });
+
+    // Fetch and display preview data
+    $.ajax({
+        url: `/api/preview/${datasetId}/${fileName}`,
+        method: 'GET',
+        beforeSend: function() {
+            $('#loading-spinner').show();
+        },
+        success: function(response) {
+            displayPreviewData(response);
+            $('#loading-spinner').hide();
+        },
+        error: function(xhr, status, error) {
+            $('#status-message').text('An error occurred while fetching the preview.');
+            $('#loading-spinner').hide();
+        }
+    });
+});
 </script>
+
 {% endblock %}

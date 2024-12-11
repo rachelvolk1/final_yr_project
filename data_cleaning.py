@@ -1,5 +1,7 @@
 import pandas as pd
 import logging
+import sys
+import os
 
 logging.basicConfig(level=logging.INFO)
 
@@ -13,13 +15,13 @@ def load_and_clean_data(file_path):
         logging.info("CSV file loaded successfully.")
     except Exception as e:
         logging.error(f"Error loading CSV file: {e}")
-        return None
+        sys.exit(1)
 
     expected_columns = ['LOCATION', 'TAX TYPE', 'Transaction ID', 'Payment Date', 'Period From', 'Period To',
                         'Payment Amount', 'TPIN']
     if not all(col in df.columns for col in expected_columns):
         logging.error("Missing one or more expected columns.")
-        return None
+        sys.exit(1)
     logging.info("All expected columns are present.")
 
     date_cols = ['Payment Date', 'Period From', 'Period To']
@@ -81,3 +83,42 @@ def basic_one_hot_encode(df):
         df = pd.get_dummies(df, columns=['TAX TYPE'], prefix='TAX_TYPE', drop_first=False)
         logging.info("Performed one-hot encoding on 'TAX TYPE'.")
     return df
+
+
+def save_cleaned_data(df, output_path):
+    """
+    Save the cleaned DataFrame to the specified output path.
+    """
+    try:
+        df.to_csv(output_path, index=False)
+        logging.info(f"Cleaned data saved successfully to {output_path}.")
+    except Exception as e:
+        logging.error(f"Error saving cleaned data: {e}")
+        sys.exit(1)
+
+
+def main():
+    if len(sys.argv) != 3:
+        logging.error("Please provide the file path and output file path as arguments.")
+        sys.exit(1)
+
+    file_path = sys.argv[1]
+    output_path = sys.argv[2]
+
+    if not os.path.exists(file_path):
+        logging.error(f"File does not exist: {file_path}")
+        sys.exit(1)
+
+    df = load_and_clean_data(file_path)
+    if df is not None:
+        df = ensure_data_types(df)
+        df = remove_duplicates(df)
+        df = basic_one_hot_encode(df)
+        save_cleaned_data(df, output_path)
+        logging.info("Data cleaning process completed successfully.")
+    else:
+        logging.error("Data cleaning process failed.")
+
+
+if __name__ == '__main__':
+    main()

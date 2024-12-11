@@ -1,11 +1,13 @@
 {% extends "base.html" %}
-
-{% block title %}Results{% endblock %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/sb-admin-2.min.css') }}">
 
 {% block content %}
-<div id="results-section" class="section">
-    <div class="container">
-        <h1 class="text-dark">Analysis Results</h1>
+<div id="results-section" class="container-fluid mt-4">
+
+   <!-- Results Section -->
+
+     <div class="container">
+        <h1 class="text-dark">Prediction Results</h1>
 
         <!-- Result Overview Section -->
         <div class="row">
@@ -16,7 +18,7 @@
                     </div>
                     <div class="card-body">
                         <p class="text-dark">Here is an overview of the results based on the selected features.</p>
-                        
+
                         <!-- Example for displaying summary results -->
                         <div class="row">
                             <div class="col-md-4">
@@ -58,7 +60,7 @@
                     </div>
                     <div class="card-body">
                         <p class="text-dark">Detailed results for the selected features are displayed below:</p>
-                        
+
                         <!-- Results Table -->
                         <div class="table-responsive">
                             <table class="table" id="results-table">
@@ -101,10 +103,16 @@
         </div>
     </div>
 </div>
+
+</div> <!-- Closing #results-section div -->
+
 {% endblock %}
 
-{% block custom_js %}
-<script>
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{{ url_for('static', filename='js/results.js') }}"></script>
+
+    <script>
     // Button functionality for exporting results
     document.getElementById('download-csv').addEventListener('click', function () {
         alert('Downloading CSV... (Implement server-side download functionality)');

@@ -14,11 +14,11 @@ $(document).ready(function() {
   $('#preview').on('click', function(e) {
     e.preventDefault(); // Prevent the default form submission
     // Retrieve the instance ID and filename from the button's data attributes
-    var datasetId = $(this).data('dataset-id');
+    var instanceId = $(this).data('instance-id');
     var filename = $(this).data('filename');
-    if (datasetId && filename) {
+    if (instanceId && filename) {
       // Redirect to the preview page with the instance ID and filename
-      window.location.href = `/preview/${datasetId}/${filename}`;
+      window.location.href = `/preview/${instanceId}/${filename}`;
     } else {
       $('#error-message').text('Please upload a file before previewing.');
     }
